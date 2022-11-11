@@ -3,8 +3,9 @@ import reportesRoutes from './routes/reportes.routes.js'
 
 const app = express()
 
-
 app.use(express.json())
+
+
 
 app.use('/api',reportesRoutes)
 

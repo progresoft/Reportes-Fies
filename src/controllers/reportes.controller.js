@@ -1,17 +1,98 @@
 import {pool} from '../db.js'
+import jwt from 'jsonwebtoken'
+import {KEY} from '../keys.js/'
 
-export const getfies1 = async (req, res)=> {
+
+export const UsuarioLogin = async (req, res)=> {
     try {
-        const [rows] = await pool.query('Select * from fact_recaudo_cliente')
-        //const [rows] = await pool.query('Select * from fact_recaudo_cliente ORDER BY codigousuario ASC LIMIT 3 ')
-        /*const [result] = await pool.query('Select 1 + 1 AS result')*/
-        res.json(rows)
+        const {usuario, clave} = req.body   //captura los datos enviados por jason en el sevicio 
+        console.log(usuario, clave)
+        const [rows] = await pool.query('Select * from Usuarios_Api WHERE  usuario = ? AND clave = ?', [usuario, clave])
+        if (rows.length  <=0) return res.status(404).json({ //rows.length devuelve la cantidad de elementos que tiene el arreglo
+            mensaje: 'Usuario y/o clave incorrectos'
+        })
+        //TOKEN
+        const payload ={
+            check:true
+        };
+        const token = jwt.sign(payload, KEY,{
+            expiresIn:'250s'
+        })
+
+        console.log(rows)
+        res.json({
+            id: rows[0].id,
+            rol: rows[0].Rol,
+            mensaje:'Autenticacion exitosa',
+            token: token
+        })
     } catch (error) {
         return res.status(500).json({
-            mensaje: 'Error al consultar fact_recaudo_cliente'
+            mensaje: 'Error al verificar existencia de usuario'
+        })
+    }
+
+}
+
+export const LoginInfo = async (req, res)=> {
+    try {
+        jwt.verify(req.token,KEY,(err,data) =>{
+            if(err){
+                res.sendStatus(404);
+            }else{
+                res.json({
+                    mensaje:'Login exitoso'
+                    //,data
+                })
+            }
+        })
+    } catch (error) {
+        return res.status(500).json({
+            mensaje: 'Error en ruta LoginInfo'
         })
     }
 }
+
+export const getReportes = async (req, res)=> {
+    try {
+            const [rows] = await pool.query('Select * from Reportes_api ORDER BY ID ASC')
+            if (rows.length  <=0) return res.status(404).json({ //rows.length devuelve la cantidad de elementos que tiene el arreglo
+                mensaje: 'No existen reportes registrados'
+            })
+            res.json(rows)
+        }
+    catch (error) {
+        return res.status(500).json({
+            mensaje: 'Error al consultar informacion en Reportes_api'
+        })
+    }
+}
+
+export const getfies = async (req, res)=> {
+    try {
+        const {idReporte} = req.params
+        console.log(idReporte)
+        switch (idReporte) {
+            case '1': 
+                    const [rows] = await pool.query('Select * from fact_recaudo_cliente ORDER BY codigousuario ASC')
+                    res.json(rows)
+                    break;
+            default:
+                return res.status(500).json({
+                    mensaje: 'El reporte '+ idReporte +' no existe o no tiene consulta para obtener datos'
+                })
+        }
+        //const [rows] = await pool.query('Select * from fact_recaudo_cliente ')
+        // const [rows] = await pool.query('Select * from fact_recaudo_cliente ORDER BY codigousuario ASC LIMIT 3 ')
+        /*const [result] = await pool.query('Select 1 + 1 AS result')*/
+       // res.json(rows)
+    } catch (error) {
+        return res.status(500).json({
+            mensaje: 'Error al consultar informacion del reporte'
+        })
+    }
+}
+
 export const getfies1codigo = async (req, res)=> {
     try {
         //console.log(req.params.codigofactura) //Muestra en consola el parametro ingresado
@@ -26,7 +107,38 @@ export const getfies1codigo = async (req, res)=> {
             mensaje: 'Error al consultar fact_recaudo_cliente por codigo de factura'
         })
     }
+}
 
+export const getClientes = async (req, res)=> {
+    try {
+            //const [rows] = await pool.query('Select * from Clientes ORDER BY Codigo ASC LIMIT 3')
+            const [rows] = await pool.query('Select * from Clientes ORDER BY Codigo ASC')
+            if (rows.length  <=0) return res.status(404).json({ //rows.length devuelve la cantidad de elementos que tiene el arreglo
+                mensaje: 'No existen clientes registrados'
+            })
+            res.json(rows)
+        }
+    catch (error) {
+        return res.status(500).json({
+            mensaje: 'Error al consultar informacion en la tabla Clientes'
+        })
+    }
+}
+
+export const getFacturas = async (req, res)=> {
+    try {
+            //const [rows] = await pool.query('Select * from Mfactura  ORDER BY Codigo ASC LIMIT 3')
+            const [rows] = await pool.query('Select * from Mfactura  ORDER BY Codigo ASC')
+            if (rows.length  <=0) return res.status(404).json({ //rows.length devuelve la cantidad de elementos que tiene el arreglo
+                mensaje: 'No existen facturas registradas'
+            })
+            res.json(rows)
+        }
+    catch (error) {
+        return res.status(500).json({
+            mensaje: 'Error al consultar informacion en la tabla Mfactura'
+        })
+    }
 }
 
 export const crearReporte1 = async (req, res)=> {
